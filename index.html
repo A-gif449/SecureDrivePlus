@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -596,33 +597,41 @@
             transform: scale(1.1);
         }
         
-        /* Custom Alert */
+        /* Enhanced Custom Alert */
         .custom-alert {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
             background: white;
-            border-left: 5px solid var(--primary);
-            box-shadow: var(--shadow);
-            padding: 18px 25px;
             border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            padding: 20px 25px;
             display: flex;
             align-items: center;
-            transform: translateX(150%);
-            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             z-index: 1000;
-            max-width: 400px;
+            max-width: 500px;
+            width: 90%;
             pointer-events: auto;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 0;
         }
         
         .custom-alert.show {
-            transform: translateX(0);
+            top: 20px;
+            opacity: 1;
         }
         
         .alert-icon {
             margin-right: 18px;
             font-size: 28px;
             flex-shrink: 0;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .alert-content {
@@ -633,11 +642,13 @@
             margin-bottom: 5px;
             color: var(--dark);
             font-weight: 600;
+            font-size: 1.1rem;
         }
         
         .alert-content p {
             color: #6c757d;
             font-size: 0.95rem;
+            line-height: 1.5;
         }
         
         .alert-close {
@@ -657,6 +668,35 @@
         .alert-close:hover {
             color: var(--danger);
             background: rgba(247, 37, 133, 0.1);
+        }
+        
+        /* Progress Bar for Uploads */
+        .upload-progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .upload-progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .upload-progress {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary-light), var(--primary));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .upload-status {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #6c757d;
         }
         
         /* Subscription Modal */
@@ -848,6 +888,27 @@
             background: #f8f9fa;
         }
         
+        /* Payment Processing */
+        .payment-processing {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .payment-processing .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(67, 97, 238, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        
         /* Responsive */
         @media (max-width: 992px) {
             .auth-container {
@@ -901,6 +962,17 @@
                 width: 100%;
                 justify-content: flex-end;
             }
+            
+            .custom-alert {
+                flex-direction: column;
+                text-align: center;
+                padding: 15px;
+            }
+            
+            .alert-icon {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
         }
         
         @media (max-width: 576px) {
@@ -950,6 +1022,8 @@
     </style>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Razorpay Integration -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1092,15 +1166,24 @@
                     <h3>Drag & Drop your files here</h3>
                     <p>or click to browse files</p>
                     <input type="file" id="fileInput" class="file-input" multiple>
+                    <div class="upload-progress-container" id="uploadProgressContainer">
+                        <div class="upload-progress-bar">
+                            <div class="upload-progress" id="uploadProgress"></div>
+                        </div>
+                        <div class="upload-status">
+                            <span id="uploadFileName"></span>
+                            <span id="uploadPercentage">0%</span>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="documents-list">
                     <div class="documents-header">
                         <h3>Your Documents</h3>
                         <div class="sort-options">
-                            <button class="sort-btn active">Recent</button>
-                            <button class="sort-btn">Name</button>
-                            <button class="sort-btn">Size</button>
+                            <button class="sort-btn active" data-sort="date">Recent</button>
+                            <button class="sort-btn" data-sort="name">Name</button>
+                            <button class="sort-btn" data-sort="size">Size</button>
                         </div>
                     </div>
                     <div id="documentsContainer">
@@ -1112,7 +1195,7 @@
         </div>
     </div>
     
-    <!-- Custom Alert -->
+    <!-- Enhanced Custom Alert -->
     <div class="custom-alert" id="customAlert">
         <div class="alert-icon" id="alertIcon">
             <i class="material-icons">info</i>
@@ -1193,7 +1276,7 @@
                             <span>Email Support</span>
                         </div>
                     </div>
-                    <button class="plan-btn primary" data-plan="basic">
+                    <button class="plan-btn primary" data-plan="basic" id="basicPlanBtn">
                         Upgrade to Basic
                     </button>
                 </div>
@@ -1223,10 +1306,27 @@
                             <span>24/7 Priority Support</span>
                         </div>
                     </div>
-                    <button class="plan-btn primary" data-plan="pro">
+                    <button class="plan-btn primary" data-plan="pro" id="proPlanBtn">
                         Upgrade to Pro
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Processing Modal -->
+    <div class="modal-overlay" id="paymentProcessingModal">
+        <div class="subscription-modal" style="max-width: 400px; text-align: center;">
+            <div class="payment-processing" id="paymentProcessing">
+                <div class="spinner"></div>
+                <h3>Processing Payment</h3>
+                <p>Please wait while we process your payment...</p>
+            </div>
+            <div class="payment-success" id="paymentSuccess" style="display: none;">
+                <div style="font-size: 60px; color: #4BB543; margin-bottom: 20px;">✓</div>
+                <h3>Payment Successful!</h3>
+                <p>Your plan has been upgraded successfully.</p>
+                <button class="btn" style="margin-top: 20px;" id="paymentSuccessBtn">Continue to Dashboard</button>
             </div>
         </div>
     </div>
@@ -1262,12 +1362,23 @@
         const upgradeBtn = document.getElementById('upgradeBtn');
         const passwordStrength = document.getElementById('passwordStrength');
         const regPassword = document.getElementById('regPassword');
+        const basicPlanBtn = document.getElementById('basicPlanBtn');
+        const proPlanBtn = document.getElementById('proPlanBtn');
+        const paymentProcessingModal = document.getElementById('paymentProcessingModal');
+        const paymentProcessing = document.getElementById('paymentProcessing');
+        const paymentSuccess = document.getElementById('paymentSuccess');
+        const paymentSuccessBtn = document.getElementById('paymentSuccessBtn');
+        const uploadProgressContainer = document.getElementById('uploadProgressContainer');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const uploadFileName = document.getElementById('uploadFileName');
+        const uploadPercentage = document.getElementById('uploadPercentage');
         
         // App State
         let users = JSON.parse(localStorage.getItem('secureDocUsers')) || [];
         let currentUser = null;
         let documents = JSON.parse(localStorage.getItem('secureDocDocuments')) || [];
         let firstLogin = false;
+        let sortOrder = 'date';
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -1283,6 +1394,16 @@
             
             // Password strength indicator
             regPassword.addEventListener('input', updatePasswordStrength);
+            
+            // Sort buttons
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    sortOrder = this.getAttribute('data-sort');
+                    loadDocuments();
+                });
+            });
         });
         
         // Event Listeners
@@ -1455,41 +1576,42 @@
             subscriptionModal.classList.remove('active');
         });
         
-        // Plan selection
-        document.querySelectorAll('.plan-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const plan = this.getAttribute('data-plan');
-                if (plan === currentUser.plan) return;
-                
-                // Update user plan
-                currentUser.plan = plan;
-                
-                // Update storage based on plan
-                switch(plan) {
-                    case 'free':
-                        currentUser.storageLimit = 30;
-                        break;
-                    case 'basic':
-                        currentUser.storageLimit = 200;
-                        break;
-                    case 'pro':
-                        currentUser.storageLimit = 2000; // 2TB
-                        break;
-                }
-                
-                // Update user data
-                const userIndex = users.findIndex(u => u.id === currentUser.id);
-                if (userIndex !== -1) {
-                    users[userIndex] = currentUser;
-                    localStorage.setItem('secureDocUsers', JSON.stringify(users));
-                    localStorage.setItem('secureDocCurrentUser', JSON.stringify(currentUser));
-                }
-                
-                // Close modal and refresh UI
-                subscriptionModal.classList.remove('active');
-                showDashboard();
-                showAlert('Plan Updated', `Your plan has been updated to ${plan.toUpperCase()}`, 'success');
-            });
+        // Plan selection with Razorpay integration
+        basicPlanBtn.addEventListener('click', function() {
+            const plan = this.getAttribute('data-plan');
+            if (plan === currentUser.plan) return;
+            
+            // Show payment processing
+            subscriptionModal.classList.remove('active');
+            paymentProcessingModal.classList.add('active');
+            paymentProcessing.style.display = 'block';
+            paymentSuccess.style.display = 'none';
+            
+            // Simulate Razorpay payment (in a real app, you would use Razorpay's API)
+            setTimeout(() => {
+                processPayment(plan, 499); // $4.99 for Basic plan
+            }, 1500);
+        });
+        
+        proPlanBtn.addEventListener('click', function() {
+            const plan = this.getAttribute('data-plan');
+            if (plan === currentUser.plan) return;
+            
+            // Show payment processing
+            subscriptionModal.classList.remove('active');
+            paymentProcessingModal.classList.add('active');
+            paymentProcessing.style.display = 'block';
+            paymentSuccess.style.display = 'none';
+            
+            // Simulate Razorpay payment (in a real app, you would use Razorpay's API)
+            setTimeout(() => {
+                processPayment(plan, 999); // $9.99 for Pro plan
+            }, 1500);
+        });
+        
+        paymentSuccessBtn.addEventListener('click', () => {
+            paymentProcessingModal.classList.remove('active');
+            showDashboard();
         });
         
         // Functions
@@ -1518,23 +1640,27 @@
             switch(type) {
                 case 'success':
                     alertIcon.innerHTML = '<i class="material-icons">check_circle</i>';
-                    customAlert.style.borderLeftColor = 'var(--success)';
+                    alertIcon.style.backgroundColor = 'rgba(76, 201, 240, 0.1)';
                     alertIcon.style.color = 'var(--success)';
+                    customAlert.style.borderLeft = '5px solid var(--success)';
                     break;
                 case 'error':
                     alertIcon.innerHTML = '<i class="material-icons">error</i>';
-                    customAlert.style.borderLeftColor = 'var(--danger)';
+                    alertIcon.style.backgroundColor = 'rgba(247, 37, 133, 0.1)';
                     alertIcon.style.color = 'var(--danger)';
+                    customAlert.style.borderLeft = '5px solid var(--danger)';
                     break;
                 case 'warning':
                     alertIcon.innerHTML = '<i class="material-icons">warning</i>';
-                    customAlert.style.borderLeftColor = 'var(--warning)';
+                    alertIcon.style.backgroundColor = 'rgba(248, 150, 30, 0.1)';
                     alertIcon.style.color = 'var(--warning)';
+                    customAlert.style.borderLeft = '5px solid var(--warning)';
                     break;
                 default:
                     alertIcon.innerHTML = '<i class="material-icons">info</i>';
-                    customAlert.style.borderLeftColor = 'var(--accent)';
+                    alertIcon.style.backgroundColor = 'rgba(72, 149, 239, 0.1)';
                     alertIcon.style.color = 'var(--accent)';
+                    customAlert.style.borderLeft = '5px solid var(--accent)';
             }
             
             customAlert.classList.add('show');
@@ -1574,7 +1700,20 @@
         }
         
         function loadDocuments() {
-            const userDocs = documents.filter(doc => doc.userId === currentUser.id);
+            let userDocs = documents.filter(doc => doc.userId === currentUser.id);
+            
+            // Sort documents
+            switch(sortOrder) {
+                case 'name':
+                    userDocs.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                case 'size':
+                    userDocs.sort((a, b) => b.size - a.size);
+                    break;
+                default: // date
+                    userDocs.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+            }
+            
             documentsContainer.innerHTML = '';
             
             if (userDocs.length === 0) {
@@ -1601,16 +1740,31 @@
                         </div>
                     </div>
                     <div class="document-actions">
-                        <button class="document-btn" title="Download" onclick="downloadDocument('${doc.id}')">
+                        <button class="document-btn" title="Download" data-doc-id="${doc.id}">
                             <i class="material-icons">download</i>
                         </button>
-                        <button class="document-btn" title="Delete" onclick="deleteDocument('${doc.id}')">
+                        <button class="document-btn" title="Delete" data-doc-id="${doc.id}">
                             <i class="material-icons">delete</i>
                         </button>
                     </div>
                 `;
                 
                 documentsContainer.appendChild(docElement);
+            });
+            
+            // Add event listeners to the new buttons
+            document.querySelectorAll('.document-btn[title="Download"]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const docId = this.getAttribute('data-doc-id');
+                    downloadDocument(docId);
+                });
+            });
+            
+            document.querySelectorAll('.document-btn[title="Delete"]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const docId = this.getAttribute('data-doc-id');
+                    deleteDocument(docId);
+                });
             });
         }
         
@@ -1674,7 +1828,29 @@
                 }
             }
             
-            // Process files
+            // Show upload progress
+            uploadProgressContainer.style.display = 'block';
+            uploadProgress.style.width = '0%';
+            uploadPercentage.textContent = '0%';
+            
+            // Simulate upload progress (in a real app, you would track actual upload progress)
+            let progress = 0;
+            const uploadInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 100) progress = 100;
+                uploadProgress.style.width = `${progress}%`;
+                uploadPercentage.textContent = `${Math.floor(progress)}%`;
+                uploadFileName.textContent = files[0].name;
+                
+                if (progress === 100) {
+                    clearInterval(uploadInterval);
+                    processUploadedFiles(files);
+                }
+            }, 200);
+        }
+        
+        function processUploadedFiles(files) {
+            // Process files after "upload" completes
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 
@@ -1688,7 +1864,7 @@
                     size: file.size,
                     uploadDate: new Date().toISOString(),
                     // In a real app, you would store the file content or a reference to it
-                    content: 'Simulated file content for ' + file.name
+                    content: URL.createObjectURL(file) // Create a blob URL for download simulation
                 };
                 
                 documents.push(newDoc);
@@ -1706,6 +1882,11 @@
                 localStorage.setItem('secureDocCurrentUser', JSON.stringify(currentUser));
             }
             
+            // Hide progress bar
+            setTimeout(() => {
+                uploadProgressContainer.style.display = 'none';
+            }, 1000);
+            
             // Refresh UI
             showDashboard();
             showAlert('Upload Complete', `${files.length} file(s) uploaded successfully`, 'success');
@@ -1719,13 +1900,31 @@
             if (!doc) return;
             
             // In a real app, this would download the actual file from server
-            // For this demo, we'll just show an alert
-            showAlert('Download', `Downloading "${doc.name}" (simulated)`, 'info');
+            // For this demo, we'll simulate a download with a blob URL
+            if (doc.content.startsWith('blob:')) {
+                // Create a temporary anchor element to trigger download
+                const a = document.createElement('a');
+                a.href = doc.content;
+                a.download = doc.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                showAlert('Download Started', `"${doc.name}" is being downloaded`, 'success');
+            } else {
+                // Fallback for older documents without blob URL
+                showAlert('Download', `Downloading "${doc.name}" (simulated)`, 'info');
+            }
         }
         
         function deleteDocument(docId) {
             const docIndex = documents.findIndex(d => d.id === docId);
             if (docIndex === -1) return;
+            
+            // Revoke blob URL if it exists
+            if (documents[docIndex].content.startsWith('blob:')) {
+                URL.revokeObjectURL(documents[docIndex].content);
+            }
             
             // Reduce used storage
             currentUser.usedStorage -= documents[docIndex].size;
@@ -1747,6 +1946,78 @@
             // Refresh UI
             showDashboard();
             showAlert('Deleted', 'Document has been deleted', 'success');
+        }
+        
+        function processPayment(plan, amount) {
+            // In a real application, you would:
+            // 1. Create an order on your server
+            // 2. Get Razorpay options from your server
+            // 3. Initialize Razorpay checkout
+            
+            // For this demo, we'll simulate a successful payment
+            setTimeout(() => {
+                paymentProcessing.style.display = 'none';
+                paymentSuccess.style.display = 'block';
+                
+                // Update user plan
+                currentUser.plan = plan;
+                
+                // Update storage based on plan
+                switch(plan) {
+                    case 'free':
+                        currentUser.storageLimit = 30;
+                        break;
+                    case 'basic':
+                        currentUser.storageLimit = 200;
+                        break;
+                    case 'pro':
+                        currentUser.storageLimit = 2000; // 2TB
+                        break;
+                }
+                
+                // Update subscription date
+                currentUser.subscriptionDate = new Date().toISOString();
+                
+                // Update user data
+                const userIndex = users.findIndex(u => u.id === currentUser.id);
+                if (userIndex !== -1) {
+                    users[userIndex] = currentUser;
+                    localStorage.setItem('secureDocUsers', JSON.stringify(users));
+                    localStorage.setItem('secureDocCurrentUser', JSON.stringify(currentUser));
+                }
+            }, 2000);
+            
+            /* 
+            // This is how you would integrate Razorpay in a real application:
+            const options = {
+                key: 'YOUR_RAZORPAY_KEY_ID',
+                amount: amount, // in paise (e.g., 49900 for ₹499)
+                currency: 'INR',
+                name: 'SecureDoc Storage',
+                description: `${plan.toUpperCase()} Plan Subscription`,
+                image: 'https://your-logo-url.com/logo.png',
+                order_id: 'order_123', // This comes from your server
+                handler: function(response) {
+                    // Handle successful payment
+                    // Verify the payment signature on your server
+                    // Then update the user's plan
+                },
+                prefill: {
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    contact: '9999999999'
+                },
+                notes: {
+                    address: 'SecureDoc Storage Office'
+                },
+                theme: {
+                    color: '#4361ee'
+                }
+            };
+            
+            const rzp = new Razorpay(options);
+            rzp.open();
+            */
         }
         
         function updatePasswordStrength() {
@@ -1780,10 +2051,6 @@
             passwordStrength.style.width = `${width}%`;
             passwordStrength.style.backgroundColor = color;
         }
-        
-        // Expose functions to global scope for HTML onclick attributes
-        window.downloadDocument = downloadDocument;
-        window.deleteDocument = deleteDocument;
     </script>
 </body>
 </html>
